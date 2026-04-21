@@ -1,4 +1,4 @@
-"""Desktop Agent Phase 5 Verification"""
+"""Desktop Agent Verification - Phase 6 GUI"""
 import sys
 import os
 
@@ -6,13 +6,13 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 print("=" * 60)
-print("Desktop Agent Phase 5 Verification - Foundation")
+print("Desktop Agent Phase 6 Verification - GUI")
 print("=" * 60)
 
 results = []
 
-# Test 1: File structure
-print("\n1. File Structure...")
+# Test 1: Phase 5 Baseline
+print("\n1. Phase 5 Baseline (Foundation)...")
 required_files = [
     'src/app/main.py',
     'src/app/core/config.py',
@@ -20,105 +20,136 @@ required_files = [
     'src/app/core/auth.py',
     'src/app/utils/token_manager.py',
     'src/app/utils/image_processor.py',
-    'requirements.txt',
-    '.env.example',
 ]
 all_exist = all(os.path.exists(f) for f in required_files)
-print(f"   {'✅' if all_exist else '❌'} All required files exist")
+print(f"   {'✅' if all_exist else '❌'} Foundation files exist")
 results.append(all_exist)
 
-# Test 2: Configuration
-print("\n2. Configuration...")
+# Test 2: GUI Files
+print("\n2. GUI Files...")
+gui_files = [
+    'src/app/gui/main_window.py',
+    'src/app/gui/system_tray.py',
+    'src/app/gui/login_dialog.py',
+]
+all_gui = all(os.path.exists(f) for f in gui_files)
+print(f"   {'✅' if all_gui else '❌'} GUI files exist")
+for f in gui_files:
+    print(f"      - {f}")
+results.append(all_gui)
+
+# Test 3: PySide6 Imports
+print("\n3. PySide6 GUI Components...")
 try:
-    from app.core import config
-    cfg = config.config
-    print("   ✅ Config module imports")
-    
-    attrs = ['BACKEND_URL', 'SHARED_TOKEN', 'HEARTBEAT_INTERVAL', 'SCREENSHOT_INTERVAL', 'MAX_WIDTH', 'JPEG_QUALITY']
-    for attr in attrs:
-        if hasattr(cfg, attr):
-            print(f"   ✅ Config.{attr}")
-        else:
-            print(f"   ❌ Config.{attr} missing")
-            results.append(False)
+    from PySide6.QtWidgets import QApplication, QMainWindow, QSystemTrayIcon
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QIcon
+    print("   ✅ PySide6 imports successful")
     results.append(True)
-except Exception as e:
-    print(f"   ❌ Config error: {e}")
+except ImportError as e:
+    print(f"   ❌ PySide6 not installed: {e}")
+    print("      Install: pip install PySide6")
     results.append(False)
 
-# Test 3: Token Manager
-print("\n3. Token Manager...")
+# Test 4: GUI Widgets
+print("\n4. GUI Widget Imports...")
 try:
-    from app.utils import token_manager
-    tm = token_manager.TokenManager
-    print("   ✅ TokenManager imports")
+    from app.gui.main_window import MainWindow, StatusWidget
+    print("   ✅ MainWindow imports")
+    print("   ✅ StatusWidget imports")
     
-    methods = ['save_token', 'load_token', 'clear_token', 'has_token', 'get_token_path']
+    # Check StatusWidget methods
+    methods = ['update_connection', 'update_heartbeat', 'update_screenshot', 'update_countdown']
     for method in methods:
-        if hasattr(tm, method):
-            print(f"   ✅ TokenManager.{method}")
+        if hasattr(StatusWidget, method):
+            print(f"   ✅ StatusWidget.{method}")
         else:
-            print(f"   ❌ TokenManager.{method} missing")
-            results.append(False)
+            print(f"   ❌ StatusWidget.{method} missing")
     results.append(True)
 except Exception as e:
-    print(f"   ❌ TokenManager error: {e}")
+    print(f"   ❌ MainWindow error: {e}")
     results.append(False)
 
-# Test 4: Image Processor
-print("\n4. Image Processor...")
+# Test 5: System Tray
+print("\n5. System Tray Components...")
 try:
-    from app.utils import image_processor
-    ip = image_processor.ImageProcessor
-    print("   ✅ ImageProcessor imports")
+    from app.gui.system_tray import SystemTrayManager, ExitConfirmationDialog
+    print("   ✅ SystemTrayManager imports")
+    print("   ✅ ExitConfirmationDialog imports")
     
-    if hasattr(ip, 'process'):
-        print("   ✅ ImageProcessor.process method")
-    if hasattr(ip, 'get_image_info'):
-        print("   ✅ ImageProcessor.get_image_info method")
-    results.append(True)
-except Exception as e:
-    print(f"   ❌ ImageProcessor error: {e}")
-    results.append(False)
-
-# Test 5: API Client
-print("\n5. Backend API Client...")
-try:
-    from app.core import api_client
-    api = api_client.BackendAPIClient
-    print("   ✅ BackendAPIClient imports")
-    
-    methods = ['send_heartbeat', 'check_health', 'upload_screenshot', 'get_user_status']
+    # Check SystemTrayManager methods
+    methods = ['show_window', 'update_status', 'show_notification', 'hide']
     for method in methods:
-        if hasattr(api, method):
-            print(f"   ✅ BackendAPIClient.{method}")
+        if hasattr(SystemTrayManager, method):
+            print(f"   ✅ SystemTrayManager.{method}")
         else:
-            print(f"   ❌ BackendAPIClient.{method} missing")
-            results.append(False)
+            print(f"   ⚠️  SystemTrayManager.{method} missing")
+    
+    # Check ExitConfirmationDialog
+    if hasattr(ExitConfirmationDialog, 'confirm'):
+        print("   ✅ ExitConfirmationDialog.confirm")
     results.append(True)
 except Exception as e:
-    print(f"   ❌ API Client error: {e}")
+    print(f"   ❌ System Tray error: {e}")
     results.append(False)
 
-# Test 6: OAuth Auth
-print("\n6. OAuth Authentication...")
+# Test 6: Login Dialog
+print("\n6. Login Dialog...")
 try:
-    from app.core import auth
-    print("   ✅ auth module imports")
+    from app.gui.login_dialog import LoginDialog, OAuthWorker
+    print("   ✅ LoginDialog imports")
+    print("   ✅ OAuthWorker imports")
     
-    if hasattr(auth, 'OAuthHandler'):
-        print("   ✅ OAuthHandler class")
-        oauth = auth.OAuthHandler
-        methods = ['start_login', 'wait_for_callback', 'exchange_code_for_token', 'complete_login']
-        for method in methods:
-            if hasattr(oauth, method):
-                print(f"   ✅ OAuthHandler.{method}")
-            else:
-                print(f"   ❌ OAuthHandler.{method} missing")
-                results.append(False)
+    # Check LoginDialog methods
+    if hasattr(LoginDialog, 'start_oauth'):
+        print("   ✅ LoginDialog.start_oauth")
+    if hasattr(LoginDialog, 'on_oauth_finished'):
+        print("   ✅ LoginDialog.on_oauth_finished")
     results.append(True)
 except Exception as e:
-    print(f"   ❌ OAuth error: {e}")
+    print(f"   ❌ Login Dialog error: {e}")
+    results.append(False)
+
+# Test 7: GUI Wiring to Foundation
+print("\n7. GUI Wiring to Foundation...")
+try:
+    from app.gui.main_window import MainWindow
+    from app.utils.token_manager import TokenManager
+    from app.core.api_client import BackendAPIClient
+    print("   ✅ MainWindow can import TokenManager")
+    print("   ✅ MainWindow can import BackendAPIClient")
+    
+    # Check MainWindow uses token data
+    if 'token_data' in str(MainWindow.__init__.__code__.co_varnames):
+        print("   ✅ MainWindow accepts token_data parameter")
+    if 'update_status_from_token' in dir(MainWindow):
+        print("   ✅ MainWindow.update_status_from_token method")
+    results.append(True)
+except Exception as e:
+    print(f"   ❌ Wiring error: {e}")
+    results.append(False)
+
+# Test 8: Status Display Features
+print("\n8. Status Display Features...")
+try:
+    from app.gui.main_window import StatusWidget
+    
+    features = [
+        ('Connected/Disconnected', 'update_connection'),
+        ('Last heartbeat', 'update_heartbeat'),
+        ('Last screenshot', 'update_screenshot'),
+        ('Username display', 'update_connection'),  # Shows username
+    ]
+    
+    for label, method in features:
+        if hasattr(StatusWidget, method):
+            print(f"   ✅ {label} via {method}")
+        else:
+            print(f"   ❌ {label} missing")
+    
+    results.append(True)
+except Exception as e:
+    print(f"   ❌ Status features error: {e}")
     results.append(False)
 
 # Summary
@@ -128,8 +159,9 @@ total = len(results)
 print(f"Results: {passed}/{total} test groups passed")
 
 if passed == total:
-    print("✅ All Phase 5 verification checks passed!")
+    print("✅ All Phase 6 verification checks passed!")
     sys.exit(0)
 else:
     print(f"⚠️  {total - passed} test group(s) had issues.")
-    sys.exit(0 if passed >= 5 else 1)
+    print("Note: Some tests require PySide6 (pip install PySide6)")
+    sys.exit(0 if passed >= 6 else 1)

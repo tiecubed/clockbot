@@ -1,60 +1,76 @@
-"""Desktop Agent Entry Point"""
+"""Desktop Agent Entry Point - Phase 6 GUI"""
 import sys
 import os
-import asyncio
 
 # Add app to path
 sys.path.insert(0, os.path.dirname(__file__))
 
-from core.config import config
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import Qt
+
+from gui.main_window import MainWindow
+from gui.system_tray import SystemTrayManager
 from utils.token_manager import TokenManager
 
 
-def check_configuration():
-    """Check if agent is configured"""
-    if not config.is_configured:
-        print("❌ Agent not configured!")
-        print("Please set BACKEND_URL and SHARED_TOKEN in .env")
-        return False
-    return True
-
-
-def check_saved_token():
-    """Check for saved authentication token"""
-    token_data = TokenManager.load_token()
-    if token_data:
-        print(f"✅ Found saved token for user: {token_data.get('username', 'unknown')}")
-        return token_data
-    return None
-
-
 def main():
-    """Main entry point"""
-    print("=" * 60)
-    print("Time Tracker Desktop Agent")
-    print("=" * 60)
+    """Main entry point for Desktop Agent"""
+    # Enable high DPI support
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
+    )
     
-    # Check configuration
-    if not check_configuration():
-        sys.exit(1)
-    
-    print(f"✅ Configuration loaded")
-    print(f"   Backend: {config.BACKEND_URL}")
-    print(f"   Heartbeat: {config.HEARTBEAT_INTERVAL}s")
-    print(f"   Screenshot: {config.SCREENSHOT_INTERVAL}s")
+    # Create application
+    app = QApplication(sys.argv)
+    app.setApplicationName("Time Tracker Agent")
+    app.setQuitOnLastWindowClosed(False)  # Keep running in tray
     
     # Check for saved token
-    token_data = check_saved_token()
-    if token_data:
-        print(f"✅ User authenticated: {token_data.get('username')}")
-        print("\nTODO: Start GUI with system tray and heartbeat")
-    else:
-        print("⚠️  No saved token found")
-        print("\nTODO: Show login dialog for OAuth")
+    token_data = TokenManager.load_token()
     
-    print("\n" + "=" * 60)
-    print("Phase 5 Foundation Complete")
+    # Create main window
+    window = MainWindow(token_data)
+    
+    # Create system tray
+    tray = SystemTrayManager(window, app)
+    tray.tray_icon.show()
+    
+    # Connect window close to minimize to tray
+    window.closeEvent = lambda event: handle_close(event, window, tray)
+    
+    # Show window initially
+    window.show()
+    
     print("=" * 60)
+    print("Time Tracker Agent - Phase 6 GUI")
+    print("=" * 60)
+    print(f"Token status: {'Connected' if token_data else 'Not connected'}")
+    print("Minimize to system tray to keep running")
+    print("=" * 60)
+    
+    # Run application
+    sys.exit(app.exec())
+
+
+def handle_close(event, window, tray):
+    """Handle window close - minimize to tray instead of exit"""
+    from gui.system_tray import ExitConfirmationDialog
+    
+    is_clocked_in = getattr(window, 'is_clocked_in', False)
+    
+    # Show confirmation dialog
+    if ExitConfirmationDialog.confirm(window, is_clocked_in):
+        # User wants to exit completely
+        tray.tray_icon.hide()
+        event.accept()
+    else:
+        # User wants to minimize to tray
+        event.ignore()
+        window.hide()
+        tray.show_notification(
+            "Time Tracker Agent",
+            "Running in system tray. Double-click to restore."
+        )
 
 
 if __name__ == '__main__':
