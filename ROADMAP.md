@@ -231,3 +231,62 @@ uvicorn app.main:app --reload
 ```
 
 API runs at http://localhost:8000
+
+## Phase 3: Discord Bot Architecture ✅ COMPLETE
+
+### Deliverables
+- discord_bot folder structure with src/ layout
+- Bot main entry point (main.py) with unified !clock command registration
+- Unified command router/parser (commands/router.py, user.py, admin.py)
+- Backend API client (httpx-based async wrapper)
+- Permission checks (role/channel validators)
+- Discord embed formatter service
+- .env.example configuration template
+
+### Files Created
+```
+discord_bot/
+├── src/
+│   ├── main.py                    # Bot entry, unified !clock command
+│   └── bot/
+│       ├── config.py              # Pydantic settings
+│       ├── core/
+│       │   ├── api_client.py      # Backend API wrapper (httpx)
+│       │   └── checks.py          # Permission validators
+│       ├── commands/
+│       │   ├── router.py          # Unified !clock dispatcher
+│       │   ├── user.py            # in, out, pay, help handlers
+│       │   └── admin.py           # All admin command handlers
+│       └── services/
+│           └── formatter.py       # Discord embeds
+├── requirements.txt               # discord.py, httpx
+├── .env.example                   # Configuration template
+└── VERIFY.md                      # Verification notes
+```
+
+### Architecture Highlights
+1. **Unified Command System**: Single `!clock` command registered, routes via ClockCommandRouter
+2. **Health Validation**: !clock in validates agent health (90s rule) before allowing session start
+3. **Permission Decorators**: Role/channel checks via @ClockChecks decorators
+4. **Async API Client**: httpx-based backend communication with automatic retries
+5. **Rich Embeds**: Formatted Discord embeds for pay summaries, time reports, help
+
+### Verification Status
+- Structure: ✅ All files present
+- Imports: ⚠️ Requires `pip install -r requirements.txt` to verify
+- Configuration: ✅ .env.example with all required variables
+
+### Commands Implemented
+- !clock in - Start session (requires healthy agent)
+- !clock out - End session
+- !clock pay - Show unpaid time/pay
+- !clock help - Command help
+- !clock hourlyrate @user 15
+- !clock addtime/removetime
+- !clock day/week @user
+- !clock who - Active users
+- !clock status @user
+- !clock clear - Mark paid
+
+---
+
