@@ -17,7 +17,7 @@ class UserCommandHandler:
     @ClockChecks.in_clock_channel()
     @ClockChecks.has_clock_role()
     async def in_(self, ctx: commands.Context, *args):
-        """!clock in - Start work session"""
+        """!clock in - Start work session (validates healthy agent)"""
         user_id = str(ctx.author.id)
         
         try:
@@ -27,7 +27,7 @@ class UserCommandHandler:
                 await ctx.send("❌ You are already clocked in!")
                 return
             
-            # Check agent health (90s rule)
+            # Check agent health (90s rule) - REQUIRED before clock in
             health = await self.api.check_agent_health(user_id)
             if not health.get('healthy'):
                 seconds = health.get('seconds_since_heartbeat', 'unknown')
@@ -39,20 +39,22 @@ class UserCommandHandler:
             
             # Start session
             session = await self.api.start_session(user_id)
-            start_time = session.get('started_at', 'now')
+            start_time = session.get('started_at_formatted', 'now')
             
-            await ctx.send(
-                f"✅ **Clocked in!**\n"
-                f"Started at: {start_time}\n"
-                f"Session ID: `{session.get('session_id')}`"
+            embed = discord.Embed(
+                title="✅ Clocked In",
+                description=f"Session started at {start_time}",
+                color=discord.Color.green()
             )
+            embed.set_footer(text="Use !clock out when finished")
+            await ctx.send(embed=embed)
             
         except Exception as e:
             await ctx.send(f"❌ Error clocking in: {str(e)}")
     
     @ClockChecks.in_clock_channel()
     async def out(self, ctx: commands.Context, *args):
-        """!clock out - End work session"""
+        """!clock out - End user's active session"""
         user_id = str(ctx.author.id)
         
         try:
@@ -68,11 +70,16 @@ class UserCommandHandler:
             
             hours = result.get('hours_worked', 0)
             minutes = result.get('minutes_worked', 0)
+            total_minutes = result.get('total_minutes', 0)
             
-            await ctx.send(
-                f"✅ **Clocked out!**\n"
-                f"Session duration: {hours}h {minutes}m"
+            embed = discord.Embed(
+                title="✅ Clocked Out",
+                color=discord.Color.green()
             )
+            embed.add_field(name="Session Duration", value=f"{hours}h {minutes}m", inline=True)
+            embed.add_field(name="Total Minutes", value=str(total_minutes), inline=True)
+            embed.set_footer(text="Session saved and ready for payroll")
+            await ctx.send(embed=embed)
             
         except Exception as e:
             await ctx.send(f"❌ Error clocking out: {str(e)}")
