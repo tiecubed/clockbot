@@ -94,48 +94,91 @@ cd backend && python test_api.py
 
 ---
 
-## Phase 3: Discord Bot Architecture ✅ COMPLETE
+## Phase 5: Desktop Agent Foundation ✅ COMPLETE
 
 ### Deliverables
-- [x] discord_bot folder structure with src/ layout
-- [x] Bot main entry point (main.py) with unified !clock command
-- [x] Unified command router/parser (commands/router.py)
-- [x] Backend API client (httpx-based async wrapper)
-- [x] Permission checks (role/channel validators)
-- [x] Discord embed formatter service
+- [x] desktop_agent folder structure with src/ layout
+- [x] requirements.txt (PySide6, httpx, mss, Pillow)
+- [x] Configuration module (dataclass with .env loading)
+- [x] Token manager (JSON persistence in ~/.clock_agent/)
+- [x] Backend API client (httpx-based)
+- [x] OAuth scaffolding (Discord OAuth handler)
+- [x] Image processor (JPG compression, resize)
 - [x] .env.example configuration template
+- [x] verify.py for Phase 5 validation
+- [x] main.py entry point
 
 ### Files
 ```
-discord_bot/
+desktop_agent/
 ├── requirements.txt
 ├── .env.example
 ├── verify.py
 └── src/
-    ├── main.py
-    └── bot/
-        ├── config.py
+    └── app/
+        ├── main.py
         ├── core/
+        │   ├── config.py
         │   ├── api_client.py
-        │   └── checks.py
-        ├── commands/
-        │   ├── router.py
-        │   ├── user.py
-        │   └── admin.py
-        └── services/
-            └── formatter.py
+        │   └── auth.py
+        └── utils/
+            ├── token_manager.py
+            └── image_processor.py
 ```
+
+### Architecture
+
+**Portable EXE Design:**
+- Single executable (PyInstaller)
+- No installer required
+- No auto-start
+- Runs in system tray
+- Outbound HTTPS only (no inbound ports)
+
+**Core Components:**
+
+| Component | Purpose |
+|-----------|---------|
+| Config | BACKEND_URL, SHARED_TOKEN, intervals from .env |
+| TokenManager | Save/load auth tokens to ~/.clock_agent/agent_token.json |
+| BackendAPIClient | httpx client with Bearer auth, heartbeat, screenshot upload |
+| OAuthHandler | Discord OAuth flow with local callback server |
+| ImageProcessor | mss -> PIL -> JPG (1920px max, quality 70) |
 
 ### Verification
+
 ```bash
-cd discord_bot && pip install -r requirements.txt
-cd discord_bot && python verify.py
+cd desktop_agent && python verify.py
 ```
 
-**Results:** 6/11 test groups passed (5 require discord.py)
-- ✅ File structure complete (8/8 files)
-- ✅ Config loading (DISCORD_TOKEN, SHARED_TOKEN, API_BASE_URL)
-- ✅ API Client (13 methods, Bearer auth)
+**Results: 6/6 test groups PASSED**
+```
+✅ File Structure (8/8 required files)
+✅ Configuration (BACKEND_URL, SHARED_TOKEN, HEARTBEAT_INTERVAL, SCREENSHOT_INTERVAL, MAX_WIDTH, JPEG_QUALITY)
+✅ Token Manager (save_token, load_token, clear_token, has_token, get_token_path)
+✅ Image Processor (process, get_image_info)
+✅ Backend API Client (send_heartbeat, check_health, upload_screenshot, get_user_status)
+✅ OAuth Authentication (OAuthHandler, start_login, wait_for_callback, exchange_code_for_token, complete_login)
+```
+
+### Configuration
+
+```bash
+cd desktop_agent
+cp .env.example .env
+# Edit .env:
+BACKEND_URL=http://localhost:8000
+SHARED_TOKEN=match_backend_token
+DISCORD_CLIENT_ID=your_app_id
+HEARTBEAT_INTERVAL=30
+SCREENSHOT_INTERVAL=300
+MAX_WIDTH=1920
+JPEG_QUALITY=70
+```
+
+---
+
+## Phase 6: (NOT STARTED)
 
 ---
 
