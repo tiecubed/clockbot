@@ -52,6 +52,15 @@ async def health_check():
     }
 
 
+# Include routers
+from app.routers import agents, sessions, screenshots, users, payroll
+
+app.include_router(agents.router, prefix="/api/v1")
+app.include_router(sessions.router, prefix="/api/v1")
+app.include_router(screenshots.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
+app.include_router(payroll.router, prefix="/api/v1")
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, reload=True)
