@@ -255,3 +255,84 @@ cd src && python main.py
 | 28de2b4 | Phase 2 | API verification |
 | e1c4848 | Phase 2 | FastAPI routers |
 | 0274548 | Phase 1 | Database, services |
+
+## Phase 7: Desktop Agent Core Services
+
+**Status: COMPLETE**
+
+### Phase 7 Deliverables
+
+| Component | File | Features |
+|-----------|------|----------|
+| HeartbeatService | `desktop_agent/src/app/core/heartbeat.py` | 30s interval, QTimer, signals status |
+| ScreenshotService | `desktop_agent/src/app/core/screenshot.py` | 5min interval, mss capture, all monitors |
+| JPG Processing | `image_processor.py` | Resize 1920px, quality 70, async upload |
+| Service Wiring | `desktop_agent/src/app/main.py` | TimeTrackerApp with service lifecycle |
+| Status Updates | `main_window.py` | Heartbeat, screenshot, countdown signals |
+| No Auto-Start | `main.py` | Services conditional on connection/clocked in |
+
+### Phase 7 Verification
+
+**Command:**
+```bash
+cd desktop_agent && python verify.py
+```
+
+**Results: 8/8 test groups PASSED**
+
+```
+✅ Phase 6 Baseline (GUI files exist)
+✅ Phase 7 Service Files (heartbeat.py, screenshot.py exist)
+✅ HeartbeatService Code Structure
+   ✅ HeartbeatService class defined
+   ✅ start method (30s interval)
+   ✅ stop method
+   ✅ send_heartbeat method
+   ✅ Uses QTimer for interval
+✅ ScreenshotService Code Structure
+   ✅ ScreenshotService class defined
+   ✅ start method (5 min interval)
+   ✅ stop method
+   ✅ take_screenshot method
+   ✅ Uses mss for capture
+   ✅ Uses ImageProcessor for JPG
+✅ Main App Service Wiring
+   ✅ Imports HeartbeatService, ScreenshotService
+   ✅ Starts heartbeat service
+   ✅ Starts screenshot service when clocked in
+   ✅ Stops screenshot service when clocked out
+   ✅ Connects heartbeat_sent signal
+   ✅ Connects screenshot_taken signal
+   ✅ Connects countdown_updated signal
+✅ Confirming No Auto-Start
+   ✅ Services only start after user connection
+   ✅ Screenshots only start when clocked in
+✅ Status Display Wiring
+   ✅ Heartbeat updates StatusWidget
+   ✅ Screenshot updates StatusWidget
+   ✅ Countdown updates StatusWidget
+✅ Service Module Import Test
+   ✅ HeartbeatService imports
+   ✅ ScreenshotService imports
+```
+
+### Service Architecture
+
+**Heartbeat Flow:**
+1. HeartbeatService starts when user connects
+2. Sends heartbeat to backend every 30 seconds
+3. Maintains "healthy" agent status
+4. Updates StatusWidget with last heartbeat time
+
+**Screenshot Flow:**
+1. ScreenshotService starts only when clocked in
+2. Captures ALL connected monitors every 5 minutes
+3. Processes: Resize >1920px, compress to JPG quality 70
+4. Uploads through async API client
+5. Updates StatusWidget with last screenshot time
+
+**No Auto-Start:**
+- Services only start after Discord OAuth login
+- Screenshots only when user is clocked in (session_id active)
+- No Windows auto-start or registry entries
+
