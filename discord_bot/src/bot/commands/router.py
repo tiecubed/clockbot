@@ -18,6 +18,11 @@ class ClockCommandRouter:
         'setchannel', 'clear'
     }
     
+    # Map subcommand names to handler method names
+    COMMAND_MAP = {
+        'in': 'in_',  # 'in' subcommand -> 'in_' method (Python keyword conflict)
+    }
+    
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.api = BackendAPIClient()
@@ -29,6 +34,10 @@ class ClockCommandRouter:
         
         self.user_handler = UserCommandHandler(bot, self.api, self.formatter)
         self.admin_handler = AdminCommandHandler(bot, self.api, self.formatter)
+    
+    def _get_method_name(self, subcommand: str) -> str:
+        """Get handler method name from subcommand (handles keyword conflicts)"""
+        return self.COMMAND_MAP.get(subcommand, subcommand)
     
     async def route(self, ctx: commands.Context, *args: str):
         """Main entry point - routes to appropriate handler"""
@@ -46,7 +55,7 @@ class ClockCommandRouter:
         
         # Route user commands
         if subcommand in self.USER_COMMANDS:
-            handler = getattr(self.user_handler, subcommand, None)
+            handler = getattr(self.user_handler, self._get_method_name(subcommand), None)
             if handler:
                 return await handler(ctx, *remaining_args)
             return await ctx.send(f"❌ Unknown user command: `{subcommand}`")
