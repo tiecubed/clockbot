@@ -12,7 +12,6 @@ class BackendAPIClient:
         self.token = token or config.SHARED_TOKEN
         self.headers = {
             'Authorization': f'Bearer {self.token}',
-            'Content-Type': 'application/json'
         }
         self.client = httpx.AsyncClient(
             base_url=self.base_url,
@@ -42,21 +41,49 @@ class BackendAPIClient:
     
     async def upload_screenshot(self, user_id: str, session_id: int, 
                                  monitor_index: int, image_data: bytes) -> Dict[str, Any]:
-        """Upload screenshot to backend"""
-        files = {'image': ('screenshot.jpg', image_data, 'image/jpeg')}
-        data = {
-            'user_id': user_id,
-            'session_id': session_id,
-            'monitor_index': monitor_index
-        }
+        """
+        Upload screenshot to backend.
+        Uses multipart/form-data encoding for file upload.
+        """
+        # Build multipart form data manually for async compatibility
+        boundary = '----FormBoundary' + str(hash(str(image_data)))[:16]
         
-        # Use sync client for multipart upload
-        import httpx
-        response = httpx.post(
-            f'{self.base_url}/api/v1/screenshots/upload',
-            headers={'Authorization': f'Bearer {self.token}'},
-            data=data,
-            files=files,
+        # Build multipart body
+        body = bytearray()
+        
+        # Add user_id field
+        body.extend(f'--{boundary}\r\n'.encode())
+        body.extend(b'Content-Disposition: form-data; name="user_id"\r\n\r\n')
+        body.extend(f'{user_id}\r\n'.encode())
+        
+        # Add session_id field
+        body.extend(f'--{boundary}\r\n'.encode())
+        body.extend(b'Content-Disposition: form-data; name="session_id"\r\n\r\n')
+        body.extend(f'{session_id}\r\n'.encode())
+        
+        # Add monitor_index field
+        body.extend(f'--{boundary}\r\n'.encode())
+        body.extend(b'Content-Disposition: form-data; name="monitor_index"\r\n\r\n')
+        body.extend(f'{monitor_index}\r\n'.encode())
+        
+        # Add image file
+        body.extend(f'--{boundary}\r\n'.encode())
+        body.extend(b'Content-Disposition: form-data; name="image"; filename="screenshot.jpg"\r\n')
+        body.extend(b'Content-Type: image/jpeg\r\n\r\n')
+        body.extend(image_data)
+        body.extend(b'\r\n')
+        
+        # End boundary
+        body.extend(f'--{boundary}--\r\n'.encode())
+        
+        # Send request with custom content type
+        response = await self.client.post(
+            '/api/v1/screenshots/upload',
+            content=bytes(body),
+            headers={
+                'Authorization': f'Bearer {self.token}',
+                'Content-Type': f'multipart/form-data; boundary={boundary}'
+            },
             timeout=60.0
         )
         response.raise_for_status()
